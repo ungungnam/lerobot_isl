@@ -12,6 +12,8 @@ from termcolor import colored
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+from utils import load_buffer, get_current_action
+
 from lerobot.common.datasets.lerobot_dataset import LeRobotDatasetMetadata
 from lerobot.common.datasets.factory import make_dataset
 from lerobot.common.datasets.sampler import EpisodeAwareSampler
@@ -51,22 +53,6 @@ def evaluate_policy(
     eval_metrics.loss = loss.item()
     eval_metrics.update_s = time.perf_counter() - start_time
     return eval_metrics, output_dict
-
-
-def load_buffer(buffer, action_pred_queue):
-    for item in buffer:
-        item.append(action_pred_queue.popleft().squeeze())
-    return buffer
-
-
-def get_current_action(buffer, m=1.0):
-    current_action_stack = torch.stack(buffer.pop(0), dim=0)
-    indices = torch.arange(current_action_stack.shape[0])
-    weights = torch.exp(-m*indices).cuda()
-
-    weighted_actions = current_action_stack * weights[:, None]  # 가중치 적용
-    current_action = weighted_actions.sum(dim=0) / weights.sum()
-    return buffer, current_action
 
 
 def plot_trajectory(ax, action_list, projection='2d', mode='pred'):

@@ -3,15 +3,20 @@ import logging
 from pprint import pformat
 from dataclasses import asdict
 
+import matplotlib.pyplot as plt
 from termcolor import colored
 import torch
+import numpy as np
 
+from constants import GRIPPER_EFFORT
 from piper_sdk import C_PiperInterface
+from utils import load_buffer, get_current_action, random_piper_action, random_piper_image
 from cam_utils import RealSenseCamera
-from robot_utils import read_end_pose_msg
+from robot_utils import read_end_pose_msg, set_zero_configuration, ctrl_end_pose
+
+from lerobot.configs.eval_real_time_ours import EvalRealTimeOursPipelineConfig
 
 from lerobot.common.policies.factory import make_policy
-
 from lerobot.common.datasets.lerobot_dataset import LeRobotDatasetMetadata
 
 from lerobot.common.utils.random_utils import set_seed
@@ -22,12 +27,19 @@ from lerobot.common.utils.utils import (
     format_big_number,
 )
 
-
-def setZeroConfiguration(piper):
-    piper.JointCtrl(0, 0, 0, 0, 0, 0)
-    piper.GripperCtrl(0,0, 0x01, 0)
-    piper.MotionCtrl_2(0x01, 0x01, 20, 0x00)
-    time.sleep(5)
+def create_batch(piper, wrist_rs_cam, exo_rs_cam, use_devices):
+    if use_devices:
+        return {
+            'observation.state': read_end_pose_msg(piper),
+            'observation.images.exo': exo_rs_cam.image,
+            'observation.images.wrist': wrist_rs_cam.image,
+        }
+    else:
+        return {
+            'observation.state': random_piper_action(),
+            'observation.images.exo': random_piper_image(),
+            'observation.images.wrist': random_piper_image(),
+        }
 
 
 def init_devices(cfg):
@@ -36,7 +48,7 @@ def init_devices(cfg):
     piper = C_PiperInterface("can0")
     piper.ConnectPort()
     piper.EnableArm(7)
-    setZeroConfiguration(piper)
+    set_zero_configuration(piper)
 
     wrist_rs_cam = RealSenseCamera('wrist', fps)
     exo_rs_cam = RealSenseCamera('exo', fps)
@@ -45,9 +57,15 @@ def init_devices(cfg):
     return piper, wrist_rs_cam, exo_rs_cam, table_rs_cam
 
 
-def eval_main(cfg):
+def eval_main(cfg: EvalRealTimeOursPipelineConfig):
     logging.info(pformat(asdict(cfg)))
-    piper, wrist_rs_cam, exo_rs_cam, table_rs_cam = init_devices(cfg)
+    if cfg.use_devices:
+        piper, wrist_rs_cam, exo_rs_cam, table_rs_cam = init_devices(cfg)
+    else:
+        piper = None
+        wrist_rs_cam = None
+        exo_rs_cam = None
+        table_rs_cam = None
 
     if cfg.wandb.enable and cfg.wandb.project:
         wandb_logger = WandBLogger(cfg)
@@ -83,30 +101,63 @@ def eval_main(cfg):
         logging.info(f"{cfg.env.task=}")
     logging.info(f"{num_total_params=} ({format_big_number(num_total_params)})")
 
-    wrist_rs_cam.start_recording()
-    exo_rs_cam.start_recording()
-    table_rs_cam.start_recording()
+    if cfg.use_devices:
+        wrist_rs_cam.start_recording()
+        exo_rs_cam.start_recording()
+        table_rs_cam.start_recording()
 
     policy.eval()
 
     logging.info("Start offline evaluation on a fixed dataset")
+
+    buffer = [[] for _ in range(policy.config.n_action_steps)]
+    action_pred_list = []
+
+    fig_2d, ax_2d = plt.subplots(4, 2, figsize=[25, 15])
+    fig_3d, ax_3d = plt.subplots(subplot_kw={'projection': '3d'}, figsize=[25, 15])
+
     while True:
-        pass
+        t0 = time.time()
+
         # create batch
-        batch = {}
-        batch['observation.state'] = read_end_pose_msg(piper)
-        batch['observation.images.exo'] = exo_rs_cam.image
-        batch['observation.images.wrist'] = wrist_rs_cam.image
-        # batch['observation.images.table'] = table_rs_cam.image
+        batch = create_batch(piper, wrist_rs_cam, exo_rs_cam, cfg.use_devices)
 
-        for item in batch.items():
-
-
+        for key in batch:
+            if isinstance(batch[key], torch.Tensor):
+                batch[key] = batch[key].to(device, non_blocking=True)
 
         # infer data
+        action_pred = policy.select_action(batch).squeeze()
+        if cfg.temporal_ensemble:
+            action_pred_queue = policy._action_queue.copy()
+            action_pred_queue.extendleft(action_pred.unsqueeze(0))
+            policy.reset()
+
+            buffer = load_buffer(buffer, action_pred_queue)
+            buffer, action_pred = get_current_action(buffer)
+            buffer.append([])
 
         # actuate robot
+        end_pose_data = action_pred[:6].cpu().numpy()
+        gripper_data = np.array(action_pred[6].cpu().numpy(), GRIPPER_EFFORT)
+        ctrl_end_pose(piper, end_pose_data, gripper_data)
 
+        # log data
+        action_pred_list.append(action_pred.cpu() if isinstance(action_pred, torch.Tensor) else action_pred)
+
+        step += 1
+        time.sleep(max(0, 1 / cfg.fps - (time.time() - t0)))
+
+        pass
+
+    plot_trajectory(ax_2d, action_pred_list)
+    pretty_plot(ax_2d)
+
+    plot_trajectory(ax_3d, action_pred_list, projection='3d')
+    pretty_plot(ax_3d)
+
+    fig_2d.show()
+    fig_3d.show()
 
 
 if __name__ == "__main__":
