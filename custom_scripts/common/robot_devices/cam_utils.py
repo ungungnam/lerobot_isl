@@ -3,7 +3,7 @@ import time
 import pyrealsense2 as rs
 import torch
 import numpy as np
-from constants import (
+from lerobot_isl.custom_scripts.common.constants import (
     WRIST_CAM_SN,
     EXO_CAM_SN,
     TABLE_CAM_SN,

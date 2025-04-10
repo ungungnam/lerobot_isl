@@ -8,11 +8,11 @@ from termcolor import colored
 import torch
 import numpy as np
 
-from constants import GRIPPER_EFFORT
 from piper_sdk import C_PiperInterface
-from cam_utils import RealSenseCamera
-from robot_utils import read_end_pose_msg, set_zero_configuration, ctrl_end_pose
-from utils import (
+from lerobot_isl.custom_scripts.common.constants import GRIPPER_EFFORT
+from lerobot_isl.custom_scripts.common.robot_devices.cam_utils import RealSenseCamera
+from lerobot_isl.custom_scripts.common.robot_devices.robot_utils import read_end_pose_msg, set_zero_configuration, ctrl_end_pose
+from lerobot_isl.custom_scripts.common.utils.utils import (
     load_buffer,
     get_current_action,
     random_piper_action,
