@@ -1,0 +1,28 @@
+{
+    "eval_ours": {
+        "policy.path": "/result/pi0_20250401_piper_5hz/checkpoints/last/pretrained_model",
+        "train_dataset.repo_id": "/data/piper_lerobot/lerobot_aligncups_5hz/train",
+        "train_dataset.root": "/data/piper_lerobot/lerobot_aligncups_5hz/train",
+        "dataset.repo_id": "/data/piper_lerobot/lerobot_aligncups_5hz/test",
+        "dataset.root": "/data/piper_lerobot/lerobot_aligncups_5hz/test",
+        "wandb.enable": false,
+        "batch_size": 1,
+        "dataset.episode": [0],
+        "temporal_ensemble": false
+    },
+    "train_ours": {
+        "policy.path": "/ckpt/pi0",
+        "dataset.repo_id": "/data/piper_lerobot/lerobot_aligncups_5hz/train",
+        "dataset.root": "/data/piper_lerobot/lerobot_aligncups_5hz/train",
+        "wandb.enable": true,
+        "output_dir": "/result/pi0_20250401_piper_5hz",
+    },
+    "eval_real_time_ours": {
+        "policy.path": "/result/pi0_20250401_piper_5hz/checkpoints/last/pretrained_model",
+        "train_dataset.repo_id": "/data/piper_lerobot/lerobot_aligncups_5hz/train",
+        "train_dataset.root": "/data/piper_lerobot/lerobot_aligncups_5hz/train",
+        "fps": 5,
+        "use_devices": true,
+        "task": "Align the cups",
+    }
+}
