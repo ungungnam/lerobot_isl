@@ -3,7 +3,7 @@ import time
 import pyrealsense2 as rs
 import torch
 import numpy as np
-from lerobot_isl.custom_scripts.common.constants import (
+from custom_scripts.common.constants import (
     WRIST_CAM_SN,
     EXO_CAM_SN,
     TABLE_CAM_SN,
@@ -33,6 +33,8 @@ class RealSenseCamera:
         self.rs_pipeline.start(self.rs_config)
         self.image_thread = threading.Thread(target=self.fetch_image_data, args=(self.rs_pipeline, self.camera))
 
+        self.lock = threading.Lock()
+
         self.fps = fps
 
 
@@ -45,7 +47,7 @@ class RealSenseCamera:
             t0 = time.time()
             frames = rs_pipeline.wait_for_frames()
             image = np.array(frames.get_color_frame().get_data()).astype(dtype = np.uint8)
-            image = torch.from_numpy(image).unsqueeze(0).to(dtype = torch.float32)
+            image = torch.from_numpy(image).permute(2,0,1).unsqueeze(0).to(dtype = torch.float32) / 255.0
 
             self.lock.acquire()
             self.image = image
