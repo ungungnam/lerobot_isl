@@ -19,7 +19,7 @@ class VideoWriter():
 
     def release(self):
         self.writer.release()
-
+aa
 
 class PiperDataset(torch.utils.data.Dataset):
     def __init__(
