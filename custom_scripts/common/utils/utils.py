@@ -1,4 +1,9 @@
+import time
 import torch
+from custom_scripts.common.robot_devices.robot_utils import init_robot
+
+from lerobot.custom_scripts.common.robot_devices.cam_utils import RealSenseCamera
+
 
 def load_buffer(buffer, action_pred_queue):
     for item in buffer:
@@ -15,14 +20,16 @@ def get_current_action(buffer, m=1.0):
     current_action = weighted_actions.sum(dim=0) / weights.sum()
     return buffer, current_action
 
+
 def random_piper_action():
     (x, y, z) = torch.rand(3, dtype=torch.float32) * 600000
     (rx, ry, rz) = torch.rand(3, dtype=torch.float32) * 180000
     gripper = torch.rand(1, dtype=torch.float32) * 100000
     return torch.tensor([x,y,z,rx,ry,rz,gripper]).reshape(1,7)
 
+
 def random_piper_image():
-    return torch.rand(1, 3, 480, 640, dtype=torch.float32) * 255
+    return torch.rand(1, 3, 480, 640, dtype=torch.float32)
 
 
 def plot_trajectory(ax, action_list, projection='2d', mode='pred'):
@@ -47,3 +54,36 @@ def plot_trajectory(ax, action_list, projection='2d', mode='pred'):
 def pretty_plot(ax):
     # for ax in ax:
     pass
+
+
+def log_time():
+    return time.perf_counter()
+
+
+def init_devices(cfg):
+    fps = cfg.fps
+    cam_list = cfg.cam_list
+    cam = {
+        'wrist_rs_cam': None,
+        'exo_rs_cam': None,
+        'table_rs_cam': None,
+    }
+
+    piper = init_robot()
+
+    if 'wrist' in cam_list:
+        cam['wrist_rs_cam'] = RealSenseCamera('wrist', fps)
+    if 'exo' in cam_list:
+        cam['exo_rs_cam'] = RealSenseCamera('exo', fps)
+    if 'table' in cam_list:
+        cam['table_rs_cam'] = RealSenseCamera('table', fps)
+
+    return piper, cam
+
+
+def deg2rad(deg):
+    return deg * torch.pi / 180
+
+
+def rad2deg(rad):
+    return rad * 180 / torch.pi

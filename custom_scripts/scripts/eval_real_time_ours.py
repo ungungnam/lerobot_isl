@@ -1,28 +1,32 @@
 import time
 import logging
-from pprint import pformat
+from pprint import pformat,pp
 from dataclasses import asdict
 
 import matplotlib.pyplot as plt
 from termcolor import colored
 import torch
 import numpy as np
+from huggingface_hub import login
 
-from constants import GRIPPER_EFFORT
 from piper_sdk import C_PiperInterface
-from cam_utils import RealSenseCamera
-from robot_utils import read_end_pose_msg, set_zero_configuration, ctrl_end_pose
-from utils import (
+
+from custom_scripts.common.constants import GRIPPER_EFFORT
+from custom_scripts.common.robot_devices.cam_utils import RealSenseCamera
+from custom_scripts.common.robot_devices.robot_utils import read_end_pose_msg, set_zero_configuration, ctrl_end_pose
+from custom_scripts.common.utils.utils import (
     load_buffer,
     get_current_action,
     random_piper_action,
     random_piper_image,
     plot_trajectory,
     pretty_plot,
+    log_time,
+    init_devices
 )
+from custom_scripts.configs.eval_real_time_ours import EvalRealTimeOursPipelineConfig
 
 from lerobot.configs import parser
-from lerobot.configs.eval_real_time_ours import EvalRealTimeOursPipelineConfig
 
 from lerobot.common.policies.factory import make_policy
 from lerobot.common.datasets.lerobot_dataset import LeRobotDatasetMetadata
@@ -52,26 +56,16 @@ def create_batch(piper, wrist_rs_cam, exo_rs_cam, use_devices, task):
         }
 
 
-def init_devices(cfg):
-    fps = cfg.fps
-
-    piper = C_PiperInterface("can0")
-    piper.ConnectPort()
-    piper.EnableArm(7)
-    set_zero_configuration(piper)
-
-    wrist_rs_cam = RealSenseCamera('wrist', fps)
-    exo_rs_cam = RealSenseCamera('exo', fps)
-    table_rs_cam = RealSenseCamera('table', fps)
-
-    return piper, wrist_rs_cam, exo_rs_cam, table_rs_cam
-
 
 @parser.wrap()
 def eval_main(cfg: EvalRealTimeOursPipelineConfig):
     logging.info(pformat(asdict(cfg)))
     if cfg.use_devices:
-        piper, wrist_rs_cam, exo_rs_cam, table_rs_cam = init_devices(cfg)
+        piper, cam = init_devices(cfg)
+
+        wrist_rs_cam = cam['wrist_rs_cam']
+        exo_rs_cam = cam['exo_rs_cam']
+        table_rs_cam = cam['table_rs_cam']
     else:
         piper = None
         wrist_rs_cam = None
@@ -115,7 +109,7 @@ def eval_main(cfg: EvalRealTimeOursPipelineConfig):
     if cfg.use_devices:
         wrist_rs_cam.start_recording()
         exo_rs_cam.start_recording()
-        table_rs_cam.start_recording()
+        # table_rs_cam.start_recording()
         logging.info("Devices started recording")
 
     policy.eval()
@@ -129,17 +123,21 @@ def eval_main(cfg: EvalRealTimeOursPipelineConfig):
     fig_3d, ax_3d = plt.subplots(subplot_kw={'projection': '3d'}, figsize=[25, 15])
 
     while True:
-        t0 = time.time()
+        t_start = log_time()
 
         # create batch
         batch = create_batch(piper, wrist_rs_cam, exo_rs_cam, cfg.use_devices, cfg.task)
+        t_create_batch = log_time()
 
         for key in batch:
             if isinstance(batch[key], torch.Tensor):
                 batch[key] = batch[key].to(device, non_blocking=True)
+        t_batch_to_gpu = log_time()
 
         # infer data
         action_pred = policy.select_action(batch).squeeze()
+        logged_time = policy.logged_time
+        t_action_pred = log_time()
         if cfg.temporal_ensemble:
             action_pred_queue = policy._action_queue.copy()
             action_pred_queue.extendleft(action_pred.unsqueeze(0))
@@ -150,15 +148,26 @@ def eval_main(cfg: EvalRealTimeOursPipelineConfig):
             buffer.append([])
 
         # actuate robot
-        end_pose_data = action_pred[:6].cpu().numpy()
-        gripper_data = np.array([action_pred[6].cpu().numpy(), GRIPPER_EFFORT])
-        ctrl_end_pose(piper, end_pose_data, gripper_data)
+        end_pose_data = action_pred[:6].cpu().to(dtype=int).tolist()
+        gripper_data = [action_pred[6].cpu().to(dtype=int), GRIPPER_EFFORT]
+        ctrl_end_pose(piper, end_pose_data, gripper_data) if piper is not None else None
+        t_action_publish = log_time()
 
         # log data
         action_pred_list.append(action_pred.cpu() if isinstance(action_pred, torch.Tensor) else action_pred)
 
         step += 1
-        time.sleep(max(0, 1 / cfg.fps - (time.time() - t0)))
+        time.sleep(max(0, 1 / cfg.fps - (time.time() - t_start)))
+
+        t_total = log_time()
+        logged_time = logged_time | {
+            "t_create_batch": t_create_batch - t_start,
+            "t_batch_to_gpu": t_batch_to_gpu - t_create_batch,
+            "t_action_pred": t_action_pred - t_batch_to_gpu,
+            "t_action_publish": t_action_publish - t_action_pred,
+            "t_total": t_total - t_start,
+        }
+        logging.info(colored(pformat(logged_time), "yellow", attrs=["bold"]))
 
         if step > cfg.max_steps:
             break

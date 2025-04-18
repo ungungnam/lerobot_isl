@@ -52,6 +52,8 @@ policy = Pi0Policy.from_pretrained("lerobot/pi0")
 import math
 from collections import deque
 
+from custom_scripts.common.utils.utils import log_time
+
 import torch
 import torch.nn.functional as F  # noqa: N812
 from torch import Tensor, nn
@@ -268,6 +270,7 @@ class PI0Policy(PreTrainedPolicy):
         environment. It works by managing the actions in a queue and only calling `select_actions` when the
         queue is empty.
         """
+        t_start = log_time()
         self.eval()
 
         if self.config.adapt_to_pi_aloha:
@@ -286,6 +289,9 @@ class PI0Policy(PreTrainedPolicy):
                 images, img_masks, lang_tokens, lang_masks, state, noise=noise
             )
 
+            self.logged_time = self.model.logged_time
+            del self.model.logged_time
+
             # Unpad actions
             original_action_dim = self.config.action_feature.shape[0]
             actions = actions[:, :, :original_action_dim]
@@ -298,6 +304,11 @@ class PI0Policy(PreTrainedPolicy):
             # `self.model.forward` returns a (batch_size, n_action_steps, action_dim) tensor, but the queue
             # effectively has shape (n_action_steps, batch_size, *), hence the transpose.
             self._action_queue.extend(actions.transpose(0, 1))
+
+        else:
+            self.logged_time = {}
+        self.logged_time["t_total_inference"] = log_time() - t_start
+
         return self._action_queue.popleft()
 
     def forward(self, batch: dict[str, Tensor], noise=None, time=None) -> tuple[Tensor, dict[str, Tensor]]:
@@ -658,11 +669,15 @@ class PI0FlowMatching(nn.Module):
             actions_shape = (bsize, self.config.n_action_steps, self.config.max_action_dim)
             noise = self.sample_noise(actions_shape, device)
 
+        torch.cuda.synchronize()
+        t_start = log_time()
         prefix_embs, prefix_pad_masks, prefix_att_masks = self.embed_prefix(
             images, img_masks, lang_tokens, lang_masks
         )
         prefix_att_2d_masks = make_att_2d_masks(prefix_pad_masks, prefix_att_masks)
         prefix_position_ids = torch.cumsum(prefix_pad_masks, dim=1) - 1
+        torch.cuda.synchronize()
+        t_image_encoders = log_time()
 
         # Compute image and language key value cache
         _, past_key_values = self.paligemma_with_expert.forward(
@@ -673,6 +688,7 @@ class PI0FlowMatching(nn.Module):
             use_cache=self.config.use_cache,
             fill_kv_cache=True,
         )
+        t_observation_forward_pass = log_time()
 
         dt = -1.0 / self.config.num_steps
         dt = torch.tensor(dt, dtype=torch.float32, device=device)
@@ -692,6 +708,14 @@ class PI0FlowMatching(nn.Module):
             # Euler step
             x_t += dt * v_t
             time += dt
+
+        t_action_forward_pass = log_time()
+        self.logged_time = {
+            "t_image_encoders": t_image_encoders-t_start,
+            "t_observation_forward_pass": t_observation_forward_pass-t_image_encoders,
+            "t_action_forward_pass": t_action_forward_pass-t_observation_forward_pass,
+        }
+
         return x_t
 
     def denoise_step(
