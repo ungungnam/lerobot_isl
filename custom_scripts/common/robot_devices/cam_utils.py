@@ -3,6 +3,7 @@ import time
 import pyrealsense2 as rs
 import torch
 import numpy as np
+import cv2
 from custom_scripts.common.constants import (
     WRIST_CAM_SN,
     EXO_CAM_SN,
@@ -34,6 +35,7 @@ class RealSenseCamera:
         self.image_thread = threading.Thread(target=self.fetch_image_data, args=(self.rs_pipeline, self.camera))
 
         self.lock = threading.Lock()
+        self.stop_event = threading.Event()
 
         self.fps = fps
 
@@ -41,13 +43,17 @@ class RealSenseCamera:
     def start_recording(self):
         self.image_thread.start()
 
+    def stop_recording(self):
+        self.stop_event.set()
+        self.image_thread.join()
 
     def fetch_image_data(self, rs_pipeline, cam):
-        while True:
+        while not self.stop_event.is_set():
             t0 = time.time()
             frames = rs_pipeline.wait_for_frames()
             image = np.array(frames.get_color_frame().get_data()).astype(dtype = np.uint8)
-            image = torch.from_numpy(image).permute(2,0,1).unsqueeze(0).to(dtype = torch.float32) / 255.0
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            # image = torch.from_numpy(image).permute(2,0,1).unsqueeze(0).to(dtype = torch.float32) / 255.0
 
             self.lock.acquire()
             self.image = image

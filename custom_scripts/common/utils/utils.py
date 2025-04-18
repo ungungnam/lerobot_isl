@@ -1,8 +1,7 @@
 import time
 import torch
 from custom_scripts.common.robot_devices.robot_utils import init_robot
-
-from lerobot.custom_scripts.common.robot_devices.cam_utils import RealSenseCamera
+from custom_scripts.common.robot_devices.cam_utils import RealSenseCamera
 
 
 def load_buffer(buffer, action_pred_queue):
@@ -60,7 +59,7 @@ def log_time():
     return time.perf_counter()
 
 
-def init_devices(cfg):
+def init_devices(cfg, is_recording=False):
     fps = cfg.fps
     cam_list = cfg.cam_list
     cam = {
@@ -69,21 +68,15 @@ def init_devices(cfg):
         'table_rs_cam': None,
     }
 
-    piper = init_robot()
+    piper = init_robot(is_recording=is_recording)
 
     if 'wrist' in cam_list:
         cam['wrist_rs_cam'] = RealSenseCamera('wrist', fps)
+        # pass
     if 'exo' in cam_list:
-        cam['exo_rs_cam'] = RealSenseCamera('exo', fps)
+        # cam['exo_rs_cam'] = RealSenseCamera('exo', fps)
+        pass
     if 'table' in cam_list:
         cam['table_rs_cam'] = RealSenseCamera('table', fps)
 
     return piper, cam
-
-
-def deg2rad(deg):
-    return deg * torch.pi / 180
-
-
-def rad2deg(rad):
-    return rad * 180 / torch.pi

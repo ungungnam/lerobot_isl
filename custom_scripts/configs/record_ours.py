@@ -1,11 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class RecordOursPipelineConfig:
     dataset_path: str
     episode_num: int
     episode_len: int
+    task: str
     create_video: bool = True
     use_devices: bool = True
-    task: str | None = None
     fps: int = 30
+    cam_list: list[str] = field(default_factory=lambda: ['wrist', 'exo', 'table'])

@@ -2,14 +2,15 @@ import torch
 import time
 from piper_sdk import C_PiperInterface, C_PiperForwardKinematics
 
-from custom_scripts.common.utils.utils import deg2rad
+from custom_scripts.common.constants import deg2rad
 
 
-def init_robot():
+def init_robot(is_recording=False):
     piper = C_PiperInterface("can0")
     piper.ConnectPort()
     piper.EnableArm(7)
-    set_zero_configuration(piper)
+    if not is_recording:
+        set_zero_configuration(piper)
 
     return piper
 
@@ -43,14 +44,15 @@ def readGripperMsg(piper):
     gripper_data = torch.tensor([grippers.grippers_angle, grippers.grippers_effort])
     return gripper_data
 
-def read_end_pose_ctrl(piper):
+def read_end_pose_ctrl(piper, fk):
     joints = piper.GetArmJointCtrl().joint_ctrl
     grippers = piper.GetArmGripperCtrl().gripper_ctrl
-    joints = deg2rad(0.001 * joints)
-    end_pose = 1000 * torch.tensor(C_PiperForwardKinematics.CalFK(joints)[-1]).astype(int)
 
-    end_pose_data =torch.tensor([end_pose.X_axis, end_pose.Y_axis, end_pose.Z_axis, end_pose.RX_axis, end_pose.RY_axis, end_pose.RZ_axis, grippers.grippers_angle])
-    end_pose_data = end_pose_data.unsqueeze(0)
+    joints=torch.tensor(list(joints.__dict__.values()), dtype = torch.float32)
+    joints = deg2rad(0.001 * joints)
+    end_pose = (1000 * torch.tensor(fk.CalFK(joints)[-1])).to(int)
+
+    end_pose_data =torch.cat((end_pose.reshape(1,6), torch.tensor(grippers.grippers_angle).reshape(1,1)), dim=1)
     return end_pose_data
 
 
