@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 from tqdm import tqdm
 from pprint import pformat
 from dataclasses import asdict
@@ -33,10 +34,11 @@ def record_episodes(cfg = RecordOursPipelineConfig):
         table_rs_cam.start_recording()
         logging.info("Devices started recording")
 
-    piper_dataset = PiperDataset(root=cfg.dataset_path, episode_num=cfg.episode_num, episode_len=cfg.episode_len, create_video=cfg.create_video, fps=cfg.fps)
-
     task = cfg.task
     fps = cfg.fps
+
+    dataset_path = os.path.join(cfg.dataset_path, task)
+    piper_dataset = PiperDataset(root=dataset_path, episode_num=cfg.episode_num, episode_len=cfg.episode_len, create_video=cfg.create_video, fps=fps)
 
     for i in tqdm(range(piper_dataset.num_frames)):
         t0 = time.time()

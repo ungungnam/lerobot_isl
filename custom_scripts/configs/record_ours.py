@@ -9,3 +9,4 @@ class RecordOursPipelineConfig:
     use_devices: bool = True
     task: str | None = None
     fps: int = 30
+    cam_list: list[str] | None = None
