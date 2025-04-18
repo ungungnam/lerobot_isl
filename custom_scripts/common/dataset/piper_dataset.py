@@ -24,7 +24,7 @@ aa
 class PiperDataset(torch.utils.data.Dataset):
     def __init__(
             self,
-            root: str | Path | None = None,
+            root: str | None = None,
             episode_num: int = None,
             episode_len: int = None,
             create_video : bool = True,
@@ -70,24 +70,24 @@ class PiperDataset(torch.utils.data.Dataset):
         os.makedirs(self.episode_path, exist_ok=True)
 
     def save_video(self):
-        width, height = self.episode[0]["observation.images.wrist"].shape[-2:]
+        height, width = self.episode[0]["observation.images.wrist"].shape[:2]
         video_writers = []
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
-        if self.episode[0]["observation.images.wrist"]:
-            output_path_wrist = os.path.join(self.episode_path, 'wrist')
+        if self.episode[0]["observation.images.wrist"] is not None:
+            output_path_wrist = os.path.join(self.episode_path, 'wrist.mp4')
             video_writer_wrist = VideoWriter(output_path_wrist, fourcc, self.fps, (width, height))
             video_writer_wrist.type = 'wrist'
             video_writers.append(video_writer_wrist)
 
-        if self.episode[0]["observation.images.exo"]:
-            output_path_exo = os.path.join(self.episode_path, 'exo')
-            video_writer_exo = VideoWriter(output_path_exo, fourcc, self.fps, (width, height))
-            video_writer_exo.type = 'exo'
-            video_writers.append(video_writer_exo)
+        # if self.episode[0]["observation.images.exo"] is not None:
+        #     output_path_exo = os.path.join(self.episode_path, 'exo.mp4')
+        #     video_writer_exo = VideoWriter(output_path_exo, fourcc, self.fps, (width, height))
+        #     video_writer_exo.type = 'exo'
+        #     video_writers.append(video_writer_exo)
 
-        if self.episode[0]["observation.images.table"]:
-            output_path_table = os.path.join(self.episode_path, 'table')
+        if self.episode[0]["observation.images.table"] is not None:
+            output_path_table = os.path.join(self.episode_path, 'table.mp4')
             video_writer_table = VideoWriter(output_path_table, fourcc, self.fps, (width, height))
             video_writer_table.type = 'table'
             video_writers.append(video_writer_table)
