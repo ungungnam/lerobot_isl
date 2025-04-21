@@ -30,13 +30,16 @@ class PiperDataset(torch.utils.data.Dataset):
             create_video : bool = True,
             fps: int = 30,
             save_as_lerobot : bool = True,
+            save_as_rlds : bool = True,
     ):
         self.root = root
         self.episode_num = episode_num
         self.episode_len = episode_len
         self.create_video = create_video
         self.fps = fps
+
         self.save_as_lerobot = save_as_lerobot
+        self.save_as_rlds = save_as_rlds
 
         if not os.path.isdir(self.root):
             self.create_root_dir()
