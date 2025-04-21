@@ -122,6 +122,8 @@ class PiperDataset(torch.utils.data.Dataset):
                 output_path_dir = os.path.join(self.lerobot_dataset_path, f'videos/chunk-{self.lerobot_chunk_num:03d}/observation.images.table')
                 os.makedirs(output_path_dir, exist_ok=True)
                 output_path_table = os.path.join(output_path_dir, f'episode_{self.episode_num:06d}.mp4')
+            if data_type == 'rlds':
+                raise NotImplementedError
 
             video_writer_table = VideoWriter(output_path_table, fourcc, self.fps, (width, height))
             video_writer_table.type = 'table'
