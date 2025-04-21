@@ -110,3 +110,9 @@ class PiperDataset(torch.utils.data.Dataset):
 
         for video_writer in video_writers:
             video_writer.release()
+
+    def save_episode_lerobot(self):
+        raise NotImplementedError()
+
+    def save_episode_rlds(self):
+        raise NotImplementedError()
