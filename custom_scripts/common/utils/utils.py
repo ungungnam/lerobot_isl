@@ -72,10 +72,8 @@ def init_devices(cfg, is_recording=False):
 
     if 'wrist' in cam_list:
         cam['wrist_rs_cam'] = RealSenseCamera('wrist', fps)
-        # pass
     if 'exo' in cam_list:
-        # cam['exo_rs_cam'] = RealSenseCamera('exo', fps)
-        pass
+        cam['exo_rs_cam'] = RealSenseCamera('exo', fps)
     if 'table' in cam_list:
         cam['table_rs_cam'] = RealSenseCamera('table', fps)
 
