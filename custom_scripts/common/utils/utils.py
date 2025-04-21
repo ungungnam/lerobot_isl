@@ -1,3 +1,4 @@
+import logging
 import time
 import torch
 from custom_scripts.common.robot_devices.robot_utils import init_robot
@@ -78,3 +79,12 @@ def init_devices(cfg, is_recording=False):
         cam['table_rs_cam'] = RealSenseCamera('table', fps)
 
     return piper, cam
+
+def get_task_index(task):
+    task_list = ['align_the_cups']
+
+    if task not in task_list:
+        logging.info("TASK NOT IN TASK LIST")
+        return -1
+
+    return task_list.index(task)

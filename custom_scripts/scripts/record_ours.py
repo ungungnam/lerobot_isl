@@ -8,7 +8,7 @@ from pprint import pformat
 from dataclasses import asdict
 
 from custom_scripts.configs.record_ours import RecordOursPipelineConfig
-from custom_scripts.common.utils.utils import init_devices
+from custom_scripts.common.utils.utils import init_devices, get_task_index
 from custom_scripts.common.dataset.piper_dataset import PiperDataset
 from custom_scripts.common.robot_devices.robot_utils import read_end_pose_ctrl, read_end_pose_msg
 
@@ -38,6 +38,7 @@ def record_episodes(cfg: RecordOursPipelineConfig):
         logging.info("Devices started recording")
 
     task = cfg.task
+    task_index = get_task_index(task)
     fps = cfg.fps
 
     dataset_path = os.path.join(cfg.dataset_path, task)
@@ -50,14 +51,16 @@ def record_episodes(cfg: RecordOursPipelineConfig):
     for i in tqdm(range(piper_dataset.num_frames)):
         t0 = time.time()
         frame = {
-            'timestamp': time.time(),
-            'frame_id': i,
+            'timestamp': 1/fps * i,
+            'frame_index': i,
+            'episode_index': cfg.episode_num,
+            'index': cfg.episode_num * piper_dataset.num_frames + i,
+            'task_index': task_index,
             'action': read_end_pose_ctrl(piper, fk),
             'observation.state': read_end_pose_msg(piper),
             'observation.images.wrist': wrist_rs_cam.image,
             'observation.images.exo': exo_rs_cam.image,
             'observation.images.table': table_rs_cam.image,
-            'task': task,
         }
         piper_dataset.add_frame(frame)
         t_act = time.time()-t0
