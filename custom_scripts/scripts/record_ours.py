@@ -22,7 +22,7 @@ def record_episodes(cfg: RecordOursPipelineConfig):
         piper, cam = init_devices(cfg, is_recording=True)
 
         wrist_rs_cam = cam['wrist_rs_cam']
-        # exo_rs_cam = cam['exo_rs_cam']
+        exo_rs_cam = cam['exo_rs_cam']
         table_rs_cam = cam['table_rs_cam']
     else:
         piper = None
@@ -32,7 +32,7 @@ def record_episodes(cfg: RecordOursPipelineConfig):
 
     if cfg.use_devices:
         wrist_rs_cam.start_recording()
-        # exo_rs_cam.start_recording()
+        exo_rs_cam.start_recording()
         table_rs_cam.start_recording()
         time.sleep(0.1)
         logging.info("Devices started recording")
@@ -55,7 +55,7 @@ def record_episodes(cfg: RecordOursPipelineConfig):
             'action': read_end_pose_ctrl(piper, fk),
             'observation.state': read_end_pose_msg(piper),
             'observation.images.wrist': wrist_rs_cam.image,
-            # 'observation.images.exo': exo_rs_cam.image,
+            'observation.images.exo': exo_rs_cam.image,
             'observation.images.table': table_rs_cam.image,
             'task': task,
         }
@@ -65,7 +65,7 @@ def record_episodes(cfg: RecordOursPipelineConfig):
 
     if cfg.use_devices:
         wrist_rs_cam.stop_recording()
-        # exo_rs_cam.stop_recording()
+        exo_rs_cam.stop_recording()
         table_rs_cam.stop_recording()
         logging.info("Devices stopped recording")
 

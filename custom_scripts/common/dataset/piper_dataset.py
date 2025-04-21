@@ -29,12 +29,17 @@ class PiperDataset(torch.utils.data.Dataset):
             episode_len: int = None,
             create_video : bool = True,
             fps: int = 30,
+            save_as_lerobot : bool = True,
+            save_as_rlds : bool = True,
     ):
         self.root = root
         self.episode_num = episode_num
+        self.episode_len = episode_len
         self.create_video = create_video
         self.fps = fps
-        self.episode_len = episode_len
+
+        self.save_as_lerobot = save_as_lerobot
+        self.save_as_rlds = save_as_rlds
 
         if not os.path.isdir(self.root):
             self.create_root_dir()
@@ -55,10 +60,16 @@ class PiperDataset(torch.utils.data.Dataset):
                     item[key] = item[key].tolist()
 
         df = pd.DataFrame(self.episode)
-        df.to_pickle(self.episode_file)
+        df.to_pickle(os.path.join(self.episode_path,self.episode_file))
 
         if self.create_video:
             self.save_video()
+
+        if self.save_as_lerobot:
+            self.save_episode_lerobot()
+
+        if self.save_as_rlds:
+            self.save_episode_rlds()
 
     def add_frame(self, frame):
         self.episode.append(frame)
@@ -70,7 +81,7 @@ class PiperDataset(torch.utils.data.Dataset):
         os.makedirs(self.episode_path, exist_ok=True)
 
     def save_video(self):
-        height, width = self.episode[0]["observation.images.wrist"].shape[:2]
+        height, width = self.episode[0]["observation.images.wrist"].shape[1:3]
         video_writers = []
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
@@ -80,11 +91,11 @@ class PiperDataset(torch.utils.data.Dataset):
             video_writer_wrist.type = 'wrist'
             video_writers.append(video_writer_wrist)
 
-        # if self.episode[0]["observation.images.exo"] is not None:
-        #     output_path_exo = os.path.join(self.episode_path, 'exo.mp4')
-        #     video_writer_exo = VideoWriter(output_path_exo, fourcc, self.fps, (width, height))
-        #     video_writer_exo.type = 'exo'
-        #     video_writers.append(video_writer_exo)
+        if self.episode[0]["observation.images.exo"] is not None:
+            output_path_exo = os.path.join(self.episode_path, 'exo.mp4')
+            video_writer_exo = VideoWriter(output_path_exo, fourcc, self.fps, (width, height))
+            video_writer_exo.type = 'exo'
+            video_writers.append(video_writer_exo)
 
         if self.episode[0]["observation.images.table"] is not None:
             output_path_table = os.path.join(self.episode_path, 'table.mp4')
@@ -94,8 +105,14 @@ class PiperDataset(torch.utils.data.Dataset):
 
         for item in self.episode:
             for video_writer in video_writers:
-                image = item[f'observation.images.{video_writer.type}']
+                image = item[f'observation.images.{video_writer.type}'].squeeze()
                 video_writer.write(image)
 
         for video_writer in video_writers:
             video_writer.release()
+
+    def save_episode_lerobot(self):
+        raise NotImplementedError()
+
+    def save_episode_rlds(self):
+        raise NotImplementedError()
