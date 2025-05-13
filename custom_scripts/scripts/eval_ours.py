@@ -12,7 +12,7 @@ from termcolor import colored
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from custom_scripts.common.utils.utils import load_buffer, get_current_action
+from custom_scripts.common.utils.utils import load_buffer, get_current_action, plot_trajectory, pretty_plot
 
 from lerobot.common.datasets.lerobot_dataset import LeRobotDatasetMetadata
 from lerobot.common.datasets.factory import make_dataset
@@ -79,7 +79,7 @@ def eval_main(cfg: EvalOursPipelineConfig):
         cfg.train_dataset.repo_id, cfg.train_dataset.root, revision=cfg.train_dataset.revision
     )
     dataset = make_dataset(cfg)
-    x = dataset[0]['observation.images.exo']
+    # x = dataset[0]['observation.images.exo']
 
     logging.info("Making policy.")
 
