@@ -146,7 +146,7 @@ class PiperDataset(torch.utils.data.Dataset):
         os.makedirs(self.lerobot_episode_path, exist_ok=True)
         os.makedirs(self.lerobot_videos_path, exist_ok=True)
 
-        self.lerobot_parquet_path = os.path.join(self.lerobot_episode_path, f'episode_{self.episode_num:06d}.pickle')
+        self.lerobot_parquet_path = os.path.join(self.lerobot_episode_path, f'episode_{self.episode_num:06d}.parquet')
         columns_to_save = ['action','observation.state', 'timestamp' ,'frame_index', 'episode_index','index','task_index']
         df[columns_to_save].to_parquet(self.lerobot_parquet_path, index=False)
 

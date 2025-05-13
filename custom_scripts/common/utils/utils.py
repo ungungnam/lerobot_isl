@@ -81,7 +81,7 @@ def init_devices(cfg, is_recording=False):
     return piper, cam
 
 def get_task_index(task):
-    task_list = ['align_the_cups']
+    task_list = ['Align the cups']
 
     if task not in task_list:
         logging.info("TASK NOT IN TASK LIST")

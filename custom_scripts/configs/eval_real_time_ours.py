@@ -28,9 +28,10 @@ class EvalRealTimeOursPipelineConfig:
     log_freq: int = 100
     temporal_ensemble: bool = False
     fps: int = 5
-    use_devices: bool = False
+    use_devices: bool = True
     task: str | None = None
-    max_steps: int = 1000
+    max_steps: int = 1000000
+    cam_list: list[str] = field(default_factory=lambda: ['wrist', 'exo', 'table'])
 
 
     def __post_init__(self):

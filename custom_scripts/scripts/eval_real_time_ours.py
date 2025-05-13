@@ -43,8 +43,8 @@ def create_batch(piper, wrist_rs_cam, exo_rs_cam, use_devices, task):
     if use_devices:
         return {
             'observation.state': read_end_pose_msg(piper),
-            'observation.images.exo': exo_rs_cam.image,
-            'observation.images.wrist': wrist_rs_cam.image,
+            'observation.images.exo': exo_rs_cam.image_for_inference(),
+            'observation.images.wrist': wrist_rs_cam.image_for_inference(),
             'task': [task],
         }
     else:
@@ -62,7 +62,6 @@ def eval_main(cfg: EvalRealTimeOursPipelineConfig):
     logging.info(pformat(asdict(cfg)))
     if cfg.use_devices:
         piper, cam = init_devices(cfg)
-
         wrist_rs_cam = cam['wrist_rs_cam']
         exo_rs_cam = cam['exo_rs_cam']
         table_rs_cam = cam['table_rs_cam']
@@ -79,7 +78,7 @@ def eval_main(cfg: EvalRealTimeOursPipelineConfig):
         logging.info(colored("Logs will be saved locally.", "yellow", attrs=["bold"]))
 
     device = get_safe_torch_device(cfg.policy.device, log=True)
-
+    
     torch.backends.cudnn.benchmark = True
     torch.backends.cuda.matmul.allow_tf32 = True
     set_seed(cfg.seed)

@@ -53,8 +53,6 @@ class RealSenseCamera:
             frames = rs_pipeline.wait_for_frames()
             image = np.array(frames.get_color_frame().get_data()).astype(dtype = np.uint8)
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            image = np.expand_dims(image, 0)
-            # image = torch.from_numpy(image).permute(2,0,1).unsqueeze(0).to(dtype = torch.float32) / 255.0
 
             self.lock.acquire()
             self.image = image
@@ -78,3 +76,10 @@ class RealSenseCamera:
 
     def get_color_frame(self):
         return self.camera.get_color_frame()
+
+    def image_for_inference(self):
+        image = torch.from_numpy(self.image).flip(-1)
+        return image.permute(2,0,1).unsqueeze(0).to(dtype = torch.float32) / 255.0
+
+    def image_for_record(self):
+        return np.expand_dims(self.image, 0)

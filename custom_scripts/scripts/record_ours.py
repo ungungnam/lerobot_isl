@@ -58,9 +58,9 @@ def record_episodes(cfg: RecordOursPipelineConfig):
             'task_index': task_index,
             'action': read_end_pose_ctrl(piper, fk),
             'observation.state': read_end_pose_msg(piper),
-            'observation.images.wrist': wrist_rs_cam.image,
-            'observation.images.exo': exo_rs_cam.image,
-            'observation.images.table': table_rs_cam.image,
+            'observation.images.wrist': wrist_rs_cam.image_for_record(),
+            'observation.images.exo': exo_rs_cam.image_for_record(),
+            'observation.images.table': table_rs_cam.image_for_record(),
         }
         piper_dataset.add_frame(frame)
         t_act = time.time()-t0
