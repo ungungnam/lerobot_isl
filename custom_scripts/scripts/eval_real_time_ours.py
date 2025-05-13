@@ -56,7 +56,6 @@ def create_batch(piper, wrist_rs_cam, exo_rs_cam, use_devices, task):
         }
 
 
-
 @parser.wrap()
 def eval_main(cfg: EvalRealTimeOursPipelineConfig):
     logging.info(pformat(asdict(cfg)))
