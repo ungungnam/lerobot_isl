@@ -134,6 +134,8 @@ def eval_main(cfg: EvalRealTimeOursPipelineConfig):
 
         # infer data
         action_pred = policy.select_action(batch).squeeze()
+        if len(policy._action_queue)<20:
+            policy.reset()
         logged_time = policy.logged_time
         t_action_pred = log_time()
         if cfg.temporal_ensemble:
