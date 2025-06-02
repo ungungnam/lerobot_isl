@@ -51,9 +51,32 @@ def plot_trajectory(ax, action_list, projection='2d', mode='pred'):
         raise ValueError('projection must be \"2d\" or \"3d\"')
 
 
-def pretty_plot(ax):
-    # for ax in ax:
-    pass
+def pretty_plot(fig, ax, title):
+    fig.suptitle(title)
+
+    ax[0, 0].legend(['prediction', 'ground truth'])
+    ax[1, 0].legend(['prediction', 'ground truth'])
+    ax[2, 0].legend(['prediction', 'ground truth'])
+    ax[0, 1].legend(['prediction', 'ground truth'])
+    ax[1, 1].legend(['prediction', 'ground truth'])
+    ax[2, 1].legend(['prediction', 'ground truth'])
+    ax[3, 0].legend(['prediction', 'ground truth'])
+
+    ax[0, 0].set_xlabel('x')
+    ax[1, 0].set_xlabel('y')
+    ax[2, 0].set_xlabel('z')
+    ax[0, 1].set_xlabel('rot_x')
+    ax[1, 1].set_xlabel('rot_y')
+    ax[2, 1].set_xlabel('rot_z')
+    ax[3, 0].set_xlabel('gripper')
+
+    ax[0, 0].grid()
+    ax[1, 0].grid()
+    ax[2, 0].grid()
+    ax[0, 1].grid()
+    ax[1, 1].grid()
+    ax[2, 1].grid()
+    ax[3, 0].grid()
 
 
 def log_time():

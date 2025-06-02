@@ -25,6 +25,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from safetensors.torch import load_model as load_model_as_safetensor
 from safetensors.torch import save_model as save_model_as_safetensor
 from torch import Tensor, nn
+from transformers import PreTrainedModel as HFPreTrainedModel
 
 from lerobot.common.utils.hub import HubMixin
 from lerobot.configs.policies import PreTrainedConfig
@@ -43,7 +44,7 @@ This policy has been pushed to the Hub using [LeRobot](https://github.com/huggin
 """
 
 
-class PreTrainedPolicy(nn.Module, HubMixin, abc.ABC):
+class PreTrainedPolicy(HFPreTrainedModel, HubMixin, abc.ABC):
     """
     Base class for policy models.
     """
@@ -52,7 +53,7 @@ class PreTrainedPolicy(nn.Module, HubMixin, abc.ABC):
     name: None
 
     def __init__(self, config: PreTrainedConfig, *inputs, **kwargs):
-        super().__init__()
+        super().__init__(config, *inputs, **kwargs)
         if not isinstance(config, PreTrainedConfig):
             raise ValueError(
                 f"Parameter config in `{self.__class__.__name__}(config)` should be an instance of class "

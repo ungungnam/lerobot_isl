@@ -260,7 +260,7 @@ class PI0Policy(PreTrainedPolicy):
         self._action_queue = deque([], maxlen=self.config.n_action_steps)
 
     def get_optim_params(self) -> dict:
-        return self.parameters()
+        return [p for p in self.parameters() if p.requires_grad]
 
     @torch.no_grad
     def select_action(self, batch: dict[str, Tensor], noise: Tensor | None = None) -> Tensor:

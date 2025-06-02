@@ -158,16 +158,19 @@ def eval_main(cfg: EvalOursPipelineConfig):
                     batch[key] = batch[key].to(device, non_blocking=True)
 
             # Check Loss
-            eval_tracker, output_dict = evaluate_policy(
-                eval_tracker,
-                policy,
-                batch,
-                use_amp = cfg.policy.use_amp,
-            )
+            # eval_tracker, output_dict = evaluate_policy(
+            #     eval_tracker,
+            #     policy,
+            #     batch,
+            #     use_amp = cfg.policy.use_amp,
+            # )
 
             # Plot Trajectory
             action_pred = policy.select_action(batch).squeeze()
             action_ans =  batch['action'].squeeze()[0]
+            if len(policy._action_queue) < 45:
+                policy.reset()
+
             # TODO: Implement ACT
             if cfg.temporal_ensemble:
                 action_pred_queue = policy._action_queue.copy()
@@ -188,25 +191,25 @@ def eval_main(cfg: EvalOursPipelineConfig):
             eval_tracker.step()
             is_log_step = cfg.log_freq > 0 and step % cfg.log_freq == 0
 
-            if is_log_step:
-                logging.info(eval_tracker)
-                if wandb_logger:
-                    wandb_log_dict = eval_tracker.to_dict()
-                    if output_dict:
-                        wandb_log_dict.update(output_dict)
-                    wandb_logger.log_dict(wandb_log_dict, step)
-                eval_tracker.reset_averages()
+            # if is_log_step:
+            #     logging.info(eval_tracker)
+            #     if wandb_logger:
+            #         wandb_log_dict = eval_tracker.to_dict()
+            #         if output_dict:
+            #             wandb_log_dict.update(output_dict)
+            #         wandb_logger.log_dict(wandb_log_dict, step)
+            #     eval_tracker.reset_averages()
 
             t1 = time.time()
             inference_time_list.append(t1 - t0)
 
         plot_trajectory(ax_2d, action_pred_list)
         plot_trajectory(ax_2d, action_ans_list, mode='ans')
-        pretty_plot(ax_2d)
+        pretty_plot(fig_2d, ax_2d, 'pi0 evaluation')
 
         plot_trajectory(ax_3d, action_pred_list, projection='3d')
         plot_trajectory(ax_3d, action_ans_list, projection='3d', mode='ans')
-        pretty_plot(ax_3d)
+        # pretty_plot(ax_3d)
 
         fig_2d.show()
         fig_3d.show()

@@ -64,6 +64,9 @@ class TrainPipelineConfig(HubMixin):
     eval: EvalConfig = field(default_factory=EvalConfig)
     wandb: WandBConfig = field(default_factory=WandBConfig)
 
+    use_lora: bool | None = False
+    use_ddp: bool | None = False
+
     def __post_init__(self):
         self.checkpoint_path = None
 

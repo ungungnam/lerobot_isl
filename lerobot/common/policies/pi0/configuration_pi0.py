@@ -23,7 +23,7 @@ from lerobot.configs.types import FeatureType, NormalizationMode, PolicyFeature
 
 
 @PreTrainedConfig.register_subclass("pi0")
-@dataclass
+@dataclass(eq=False)
 class PI0Config(PreTrainedConfig):
     # Input / output structure.
     n_obs_steps: int = 1

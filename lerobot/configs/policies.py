@@ -22,6 +22,7 @@ import draccus
 from huggingface_hub import hf_hub_download
 from huggingface_hub.constants import CONFIG_NAME
 from huggingface_hub.errors import HfHubHTTPError
+from transformers import PretrainedConfig as HFPretrainedConfig
 
 from lerobot.common.optim.optimizers import OptimizerConfig
 from lerobot.common.optim.schedulers import LRSchedulerConfig
@@ -34,7 +35,7 @@ T = TypeVar("T", bound="PreTrainedConfig")
 
 
 @dataclass
-class PreTrainedConfig(draccus.ChoiceRegistry, HubMixin, abc.ABC):
+class PreTrainedConfig(draccus.ChoiceRegistry, HubMixin, HFPretrainedConfig, abc.ABC):
     """
     Base configuration class for policy models.
 
