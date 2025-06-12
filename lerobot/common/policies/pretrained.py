@@ -44,7 +44,7 @@ This policy has been pushed to the Hub using [LeRobot](https://github.com/huggin
 """
 
 
-class PreTrainedPolicy(HFPreTrainedModel, HubMixin, abc.ABC):
+class PreTrainedPolicy(HubMixin, HFPreTrainedModel, abc.ABC):
     """
     Base class for policy models.
     """

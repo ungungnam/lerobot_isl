@@ -168,8 +168,8 @@ def eval_main(cfg: EvalOursPipelineConfig):
             # Plot Trajectory
             action_pred = policy.select_action(batch).squeeze()
             action_ans =  batch['action'].squeeze()[0]
-            if len(policy._action_queue) < 45:
-                policy.reset()
+            # if len(policy._action_queue) < 45:
+            #     policy.reset()
 
             # TODO: Implement ACT
             if cfg.temporal_ensemble:
